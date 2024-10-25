@@ -329,7 +329,7 @@
                     data: {
                         numero: this.search,
                     },
-                    success(response) {
+                    success: (response) => {
                         this.searchResult = response.data;
                     }
                 });

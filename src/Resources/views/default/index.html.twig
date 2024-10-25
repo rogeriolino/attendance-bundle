@@ -540,9 +540,9 @@
                         </form>
                         <hr>
                         <div class="result">
-                            <table class="table">
+                            <table class="table table-hover">
                                 <thead>
-                                    <tr>
+                                    <tr class="table-primary">
                                         <th>{{ 'label.ticket.number'|trans }}</th>
                                         <th>{{ 'label.service'|trans }}</th>
                                         <th>{{ 'label.priority'|trans }}</th>
@@ -611,7 +611,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body" v-if="atendimentoInfo">
-                        <table class="table table-bordered">
+                        <table class="table border">
                             <tbody>
                                 <tr>
                                     <th>
