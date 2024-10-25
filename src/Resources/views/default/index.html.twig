@@ -435,7 +435,7 @@
                                         <label class="control-label">{{ 'label.place'|trans }}</label>
                                         <select class="form-control" v-model="novoLocal.local" required>
                                             {% for l in locais %}
-                                                <option value="{{ l.id }}" {% if local and local.id == l.id %}selected="selected"{% endif %}>{{ l.nome }}</option>
+                                                <option :value="{{ l.id }}" {% if local and local.id == l.id %}selected="selected"{% endif %}>{{ l.nome }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -603,7 +603,7 @@
         </div>
 
         {# dialog info senha #}
-        <div id="dialog-senha" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div ref="senhaModal" id="dialog-senha" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">

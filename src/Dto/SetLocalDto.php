@@ -23,8 +23,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 final readonly class SetLocalDto
 {
     public function __construct(
+        #[Assert\NotNull]
         #[Assert\Range(min: 1)]
-        public int $local,
+        public ?int $local,
+        #[Assert\Range(min: 1)]
         public ?int $numeroLocal = null,
         public ?string $tipoAtendimento = null,
     ) {

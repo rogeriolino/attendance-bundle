@@ -190,7 +190,6 @@ class DefaultController extends AbstractController
 
     #[Route("/set_local", name: "setlocal", methods: ["POST"])]
     public function setLocal(
-        Request $request,
         LocalRepositoryInterface $localRepository,
         UsuarioServiceInterface $usuarioService,
         EventDispatcherInterface $dispatcher,

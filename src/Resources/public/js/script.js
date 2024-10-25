@@ -2,12 +2,10 @@
  * Novo SGA - Atendimento
  * @author Rogerio Lino <rogeriolino@gmail.com>
  */
-var App = App || {};
-
 (function () {
     'use strict'
     
-    var defaultTitle = document.title;
+    const defaultTitle = document.title;
 
     const app = new Vue({
         el: '#attendance',
@@ -41,22 +39,23 @@ var App = App || {};
             novoUsuario: null,
             redirecionarModal: null,
             customerModal: null,
+            senhaModal: null,
+            localModal: null,
         },
         methods: {
             update() {
-                var self = this;
                 App.ajax({
                     url: App.url('/novosga.attendance/ajax_update'),
-                    success: function (response) {
+                    success: (response) => {
                         response.data = response.data || {};
-                        var estavaVazio = self.total === 0;
-                        self.filas = response.data.filas || [];
-                        self.usuario = response.data.usuario || {};
-                        self.total = response.data.total;
-                        
+                        const estavaVazio = self.total === 0;
+                        this.filas = response.data.filas || [];
+                        this.usuario = response.data.usuario || {};
+                        this.total = response.data.total;
+
                         // habilitando botao chamar
-                        if (self.total > 0) {
-                            document.title = "(" + self.total + ") " + defaultTitle;
+                        if (this.total > 0) {
+                            document.title = "(" + this.total + ") " + defaultTitle;
                             if (estavaVazio) {
                                 try {
                                     document.getElementById('alert').play()
@@ -71,55 +70,49 @@ var App = App || {};
             },
             
             infoSenha(atendimento) {
-                var self = this;
                 App.ajax({
-                    url: App.url('/novosga.attendance/info_senha/') + atendimento.id,
-                    success: function (response) {
-                        self.atendimentoInfo = response.data;
-                        new bootstrap.Modal('#dialog-senha').show();
+                    url: App.url(`/novosga.attendance/info_senha/${atendimento.id}`),
+                    success: (response) => {
+                        this.atendimentoInfo = response.data;
+                        this.senhaModal.show();
                     }
                 });
             },
 
             setLocal() {
-                var self = this;
-                
                 App.ajax({
                     url: App.url('/novosga.attendance/set_local'),
                     type: 'post',
                     data: self.novoLocal,
-                    success: function (response) {
-                        new bootstrap.Modal(app.$refs.localModal).hide();
-                        Vue.set(self.usuario, 'numeroLocal', response.data.numero.value);
-                        self.usuario.local             = response.data.local;
-                        self.usuario.numeroLocal       = response.data.numero;
-                        self.usuario.tipoAtendimento   = response.data.tipo;
-                        self.novoLocal.local           = response.data.local.id;
-                        self.novoLocal.numeroLocal     = response.data.numero;
-                        self.novoLocal.tipoAtendimento = response.data.tipo;
-                        self.filas                     = [];
-                        self.total                     = 0;
-                        self.update();
+                    success: (response) => {
+                        this.localModal.hide();
+                        Vue.set(this.usuario, 'numeroLocal', response.data.numero.value);
+                        this.usuario.local             = response.data.local;
+                        this.usuario.numeroLocal       = response.data.numero;
+                        this.usuario.tipoAtendimento   = response.data.tipo;
+                        this.novoLocal.local           = response.data.local.id;
+                        this.novoLocal.numeroLocal     = response.data.numero;
+                        this.novoLocal.tipoAtendimento = response.data.tipo;
+                        this.filas                     = [];
+                        this.total                     = 0;
+                        this.update();
                     }
                 });
             },
             
             chamar(e) {
-                var self = this;
-                self.busy = true;
-                
+                this.busy = true;
                 if (!e.target.disabled) {
                     e.target.disabled = true;
-
                     App.ajax({
                         url: App.url('/novosga.attendance/chamar'),
                         type: 'post',
-                        success: function (response) {
-                            self.atendimento = response.data;
+                        success: (response) => {
+                            this.atendimento = response.data;
                         },
-                        complete: function () {
-                            setTimeout(function () {
-                                self.busy = false;
+                        complete: () => {
+                            setTimeout(() => {
+                                this.busy = false;
                                 e.target.disabled = false;
                             }, 3 * 1000);
                         }
@@ -127,38 +120,31 @@ var App = App || {};
                 }
             },
             
-            chamarServico: function (servico) {
-                var self = this;
-                self.busy = true;
-
+            chamarServico(servico) {
+                this.busy = true;
                 App.ajax({
-                    url: App.url('/novosga.attendance/chamar/servico/' + servico.id),
+                    url: App.url(`/novosga.attendance/chamar/servico/${servico.id}`),
                     type: 'post',
-                    success: function (response) {
-                        self.atendimento = response.data;
+                    success: (response) => {
+                        this.atendimento = response.data;
                     },
-                    complete: function () {
-                        setTimeout(function () {
-                            self.busy = false;
-                        }, 3 * 1000);
+                    complete: () => {
+                        setTimeout(() => this.busy = false, 3 * 1000);
                     }
                 });
             },
             
-            iniciar: function () {
-                var self = this;
+            iniciar() {
                 App.ajax({
                     url: App.url('/novosga.attendance/iniciar'),
                     type: 'post',
-                    success: function (response) {
-                        self.atendimento = response.data;
+                    success: (response) => {
+                        this.atendimento = response.data;
                     }
                 });
             },
             
-            naoCompareceu: function () {
-                var self = this;
-                
+            naoCompareceu() {
                 swal({
                     title: alertTitle,
                     text: alertNaoCompareceu,
@@ -169,32 +155,31 @@ var App = App || {};
                     ],
                     //dangerMode: true,
                 })
-                .then(function (ok) {
+                .then((ok) => {
                     if (!ok) {
                         return;
                     }
-                    
                     App.ajax({
                         url: App.url('/novosga.attendance/nao_compareceu'),
                         type: 'post',
-                        success: function () {
-                            self.atendimento = null;
+                        success: () => {
+                            this.atendimento = null;
                         }
                     });
                 });
             },
             
-            erroTriagem: function () {
+            erroTriagem() {
                 this.novoUsuario = null;
                 this.servicoRedirecionar = null;
                 this.redirecionarModal.show();
             },
             
-            preparaEncerrar: function () {
+            preparaEncerrar() {
                 this.servicosRealizados = [];
                 this.servicosUsuario = JSON.parse(JSON.stringify(servicosUsuario));
                 if (this.servicosUsuario.length === 1) {
-                    var su = this.servicosUsuario[0];
+                    const su = this.servicosUsuario[0];
                     if (su.subServicos.length === 0) {
                         this.addServicoRealizado(su.servico);
                     } else if (su.subServicos.length === 1) {
@@ -208,13 +193,8 @@ var App = App || {};
                 this.atendimento.status = 'iniciado';
             },
             
-            fazEncerrar: function (isRedirect) {
-                var self = this;
-                
-                var servicos = this.servicosRealizados.map(function (servico) {
-                    return servico.id;
-                });
-                
+            fazEncerrar(isRedirect) {
+                const servicos = this.servicosRealizados.map((servico) => servico.id);
                 if (servicos.length === 0) {
                     swal({
                         type: "error",
@@ -224,7 +204,7 @@ var App = App || {};
                     return;
                 }
                 
-                var data = {
+                const data = {
                     servicos,
                     redirecionar: false,
                     resolucao: this.atendimento.resolucao,
@@ -261,7 +241,7 @@ var App = App || {};
                     ],
                     //dangerMode: true,
                 })
-                .then(function (ok) {
+                .then((ok) => {
                     if (!ok) {
                         return;
                     }
@@ -270,9 +250,9 @@ var App = App || {};
                         url: App.url('/novosga.attendance/encerrar'),
                         type: 'post',
                         data: data,
-                        success() {
-                            self.atendimento = null;
-                            self.redirecionarAoEncerrar = false;
+                        success: () => {
+                            this.atendimento = null;
+                            this.redirecionarAoEncerrar = false;
                             App.Modal.closeAll();
                         }
                     });
@@ -290,26 +270,19 @@ var App = App || {};
             },
             
             changeServicoRedirecionar() {
-                var servico = this.servicoRedirecionar,
-                    self = this;
-            
-                this.usuarios = [];
-            
-                if (servico > 0) {
+                if (this.servicoRedirecionar > 0) {
+                    this.usuarios = [];
                     App.ajax({
-                        url: App.url(`/novosga.attendance/usuarios/${servico}`),
-                        success: function (response) {
-                            self.usuarios = response.data;
+                        url: App.url(`/novosga.attendance/usuarios/${this.servicoRedirecionar}`),
+                        success: (response) => {
+                            this.usuarios = response.data;
                         }
                     });
                 }
             },
             
-            redirecionar: function () {
-                var servico = this.servicoRedirecionar,
-                    self = this;
-            
-                if (servico > 0) {
+            redirecionar() {
+                if (this.servicoRedirecionar > 0) {
                     swal({
                         title: alertTitle,
                         text: alertRedirecionar,
@@ -320,20 +293,19 @@ var App = App || {};
                         ],
                         //dangerMode: true,
                     })
-                    .then(function (ok) {
+                    .then((ok) => {
                         if (!ok) {
                             return;
                         }
-
                         App.ajax({
                             url: App.url('/novosga.attendance/redirecionar'),
                             type: 'post',
                             data: {
-                                servico: servico,
+                                servico: this.servicoRedirecionaro,
                                 usuario: self.novoUsuario
                             },
-                            success: function () {
-                                self.atendimento = null;
+                            success: () => {
+                                this.atendimento = null;
                                 App.Modal.closeAll();
                             }
                         });
@@ -341,33 +313,32 @@ var App = App || {};
                 }
             },
             
-            addServicoRealizado: function (servico) {
+            addServicoRealizado(servico) {
                 this.servicosRealizados.push(servico);
                 servico.disabled = true;
             },
             
-            removeServicoRealizado: function (servico) {
+            removeServicoRealizado(servico) {
                 this.servicosRealizados.splice(this.servicosRealizados.indexOf(servico), 1);
                 servico.disabled = false;
             },
             
-            consultar: function () {
-                var self = this;
+            consultar() {
                 App.ajax({
                     url: App.url('/novosga.attendance/consulta_senha'),
                     data: {
-                        numero: self.search
+                        numero: this.search,
                     },
-                    success: function (response) {
-                        self.searchResult = response.data;
+                    success(response) {
+                        this.searchResult = response.data;
                     }
                 });
             },
 
             getItemFilaStyle(atendimento) {
-                let styles = []
+                let styles = [];
                 if (atendimento.prioridade.cor) {
-                    styles.push(`color: ${atendimento.prioridade.cor}`)
+                    styles.push(`color: ${atendimento.prioridade.cor}`);
                 }
                 return styles.join(';')
             },
@@ -375,8 +346,8 @@ var App = App || {};
             async loadCustomer() {
                 const body = this.$refs.customerModal.querySelector('.modal-body')
                 body.innerHTML = '';
-                const url = `${this.$el.dataset.baseUrl}customer/${this.atendimento.id}`
-                const resp = await fetch(url)
+                const url = `${this.$el.dataset.baseUrl}customer/${this.atendimento.id}`;
+                const resp = await fetch(url);
                 if (resp.ok) {
                     body.innerHTML = await resp.text();
                 }
@@ -414,6 +385,9 @@ var App = App || {};
         mounted() {
             this.redirecionarModal = new bootstrap.Modal(this.$refs.redirecionarModal);
             this.customerModal = new bootstrap.Modal(this.$refs.customerModal);
+            this.senhaModal = new bootstrap.Modal(this.$refs.senhaModal);
+            this.localModal = new bootstrap.Modal(this.$refs.localModal);
+
             this.$refs.customerModal.addEventListener('shown.bs.modal', (event) => {
                 this.loadCustomer();
             });
@@ -441,10 +415,10 @@ var App = App || {};
             };
             
             this.update();
+
+            if (!local) {
+                this.localModal.show();
+            }
         }
     });
-
-    if (!local) {
-        new bootstrap.Modal(app.$refs.localModal).show();
-    }
 })();
