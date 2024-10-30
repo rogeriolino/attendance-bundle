@@ -87,14 +87,14 @@
                     success: (response) => {
                         this.localModal.hide();
                         Vue.set(this.usuario, 'numeroLocal', response.data.numero.value);
-                        this.usuario.local             = response.data.local;
-                        this.usuario.numeroLocal       = response.data.numero;
-                        this.usuario.tipoAtendimento   = response.data.tipo;
-                        this.novoLocal.local           = response.data.local.id;
-                        this.novoLocal.numeroLocal     = response.data.numero;
+                        this.usuario.local = response.data.local;
+                        this.usuario.numeroLocal = response.data.numero;
+                        this.usuario.tipoAtendimento = response.data.tipo;
+                        this.novoLocal.local = response.data.local.id;
+                        this.novoLocal.numeroLocal = response.data.numero;
                         this.novoLocal.tipoAtendimento = response.data.tipo;
-                        this.filas                     = [];
-                        this.total                     = 0;
+                        this.filas = [];
+                        this.total = 0;
                         this.update();
                     }
                 });
@@ -109,6 +109,7 @@
                         type: 'post',
                         success: (response) => {
                             this.atendimento = response.data;
+                            this.update();
                         },
                         complete: () => {
                             setTimeout(() => {
@@ -153,7 +154,6 @@
                         labelNao,
                         labelSim
                     ],
-                    //dangerMode: true,
                 })
                 .then((ok) => {
                     if (!ok) {
@@ -164,6 +164,7 @@
                         type: 'post',
                         success: () => {
                             this.atendimento = null;
+                            this.update();
                         }
                     });
                 });
@@ -239,7 +240,6 @@
                         labelNao,
                         labelSim
                     ],
-                    //dangerMode: true,
                 })
                 .then((ok) => {
                     if (!ok) {
@@ -254,6 +254,7 @@
                             this.atendimento = null;
                             this.redirecionarAoEncerrar = false;
                             App.Modal.closeAll();
+                            this.update();
                         }
                     });
                 });
@@ -291,7 +292,6 @@
                             labelNao,
                             labelSim
                         ],
-                        //dangerMode: true,
                     })
                     .then((ok) => {
                         if (!ok) {
@@ -307,6 +307,7 @@
                             success: () => {
                                 this.atendimento = null;
                                 App.Modal.closeAll();
+                                this.update();
                             }
                         });
                     });
