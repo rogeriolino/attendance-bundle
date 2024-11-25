@@ -579,17 +579,17 @@
                                             </td>
                                             <td>
                                                 <span v-if="atendimento.dataChegada">
-                                                    {{moment(atendimento.dataChegada, 'YYYY-MM-DD hh:mm:ss').format(dateTimeFormat)}}
+                                                    {{moment(atendimento.dataChegada, 'YYYY-MM-DD HH:mm:ss').format(dateTimeFormat)}}
                                                 </span>
                                             </td>
                                             <td>
                                                 <span v-if="atendimento.dataInicio">
-                                                    {{moment(atendimento.dataInicio, 'YYYY-MM-DD hh:mm:ss').format(dateTimeFormat)}}
+                                                    {{moment(atendimento.dataInicio, 'YYYY-MM-DD HH:mm:ss').format(dateTimeFormat)}}
                                                 </span>
                                             </td>
                                             <td>
                                                 <span v-if="atendimento.dataFim">
-                                                    {{moment(atendimento.dataFim, 'YYYY-MM-DD hh:mm:ss').format(dateTimeFormat)}}
+                                                    {{moment(atendimento.dataFim, 'YYYY-MM-DD HH:mm:ss').format(dateTimeFormat)}}
                                                 </span>
                                             </td>
                                             <td>
@@ -658,7 +658,7 @@
                                     </th>
                                     <td>
                                         {% verbatim %}
-                                            {{moment(atendimentoInfo.dataChegada, 'YYYY-MM-DD hh:mm:ss').format(dateTimeFormat)}}
+                                            {{moment(atendimentoInfo.dataChegada, 'YYYY-MM-DD HH:mm:ss').format(dateTimeFormat)}}
                                         {% endverbatim %}
                                     </td>
                                 </tr>
