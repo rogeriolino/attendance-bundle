@@ -237,7 +237,7 @@
       </trans-unit>
       <trans-unit id="44">
         <source>MM/DD/YYYY HH:mm:ss</source>
-        <target>MM/DD/YYYY hh:mm:ss</target>
+        <target>MM/DD/YYYY HH:mm:ss</target>
         
       </trans-unit>
       <trans-unit id="45">
