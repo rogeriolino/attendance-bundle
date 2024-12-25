@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Novosga\AttendanceBundle\Dto;
 
+use Symfony\Component\Validator\Constraints as Assert;
+
 /**
  * EncerrarAtendimentoDto
  *
@@ -22,6 +24,7 @@ final readonly class EncerrarAtendimentoDto
 {
     /** @param int[] $servicos */
     public function __construct(
+        #[Assert\Count(min: 1)]
         public array $servicos,
         public ?string $resolucao = null,
         public ?string $observacao = null,

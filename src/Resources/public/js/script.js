@@ -301,7 +301,7 @@
                             url: App.url('/novosga.attendance/redirecionar'),
                             type: 'post',
                             data: {
-                                servico: this.servicoRedirecionaro,
+                                servico: this.servicoRedirecionar,
                                 usuario: self.novoUsuario
                             },
                             success: () => {

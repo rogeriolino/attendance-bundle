@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Novosga\AttendanceBundle\Dto;
 
+use Symfony\Component\Validator\Constraints as Assert;
+
 /**
  * RedirecionarAtendimentoDto
  *
@@ -21,7 +23,10 @@ namespace Novosga\AttendanceBundle\Dto;
 final readonly class RedirecionarAtendimentoDto
 {
     public function __construct(
-        public int $servico,
+        #[Assert\NotNull]
+        #[Assert\Range(min: 1)]
+        public ?int $servico = null,
+        #[Assert\Range(min: 1)]
         public ?int $usuario = null,
     ) {
     }

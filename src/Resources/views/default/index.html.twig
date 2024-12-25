@@ -487,7 +487,7 @@
                             <select class="form-control" v-model="servicoRedirecionar" v-on:change="changeServicoRedirecionar">
                                 <option value="">{{ 'label.choose'|trans }}</option>
                                 {% for su in servicosIndisponiveis %}
-                                    <option value="{{ su.servico.id }}">{{ su.servico.nome }}</option>
+                                    <option :value="{{ su.servico.id }}">{{ su.servico.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>
