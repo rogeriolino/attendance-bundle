@@ -48,7 +48,7 @@
                     url: App.url('/novosga.attendance/ajax_update'),
                     success: (response) => {
                         response.data = response.data || {};
-                        const estavaVazio = self.total === 0;
+                        const estavaVazio = this.total === 0;
                         this.filas = response.data.filas || [];
                         this.usuario = response.data.usuario || {};
                         this.total = response.data.total;
@@ -83,7 +83,7 @@
                 App.ajax({
                     url: App.url('/novosga.attendance/set_local'),
                     type: 'post',
-                    data: self.novoLocal,
+                    data: this.novoLocal,
                     success: (response) => {
                         this.localModal.hide();
                         Vue.set(this.usuario, 'numeroLocal', response.data.numero.value);
@@ -302,7 +302,7 @@
                             type: 'post',
                             data: {
                                 servico: this.servicoRedirecionar,
-                                usuario: self.novoUsuario
+                                usuario: this.novoUsuario
                             },
                             success: () => {
                                 this.atendimento = null;
