@@ -365,14 +365,16 @@
                                 <i class="fa fa-bullhorn"></i>
                                 {{ 'button.call'|trans }}
                             </button>
-                            <button class="btn btn-outline-primary"
-                                title="{{ 'button.call_next'|trans }}"
-                                v-bind:disabled="busy || fila.atendimentos.length===0 || atendimento"
-                                v-on:click="chamarServico(fila.servico.servico)"
-                                v-if="fila.servico">
-                                <i class="fa fa-bullhorn"></i>
-                                {{ 'button.call'|trans }}
-                            </button>
+                            {% if settings.callTicketByService %}
+                                <button class="btn btn-outline-primary"
+                                    title="{{ 'button.call_next'|trans }}"
+                                    v-bind:disabled="busy || fila.atendimentos.length===0 || atendimento"
+                                    v-on:click="chamarServico(fila.servico.servico)"
+                                    v-if="fila.servico">
+                                    <i class="fa fa-bullhorn"></i>
+                                    {{ 'button.call'|trans }}
+                                </button>
+                            {% endif %}
                         </li>
                         <li v-for="(atendimento, index) in fila.atendimentos">
                             <a href="#"
@@ -611,7 +613,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body" v-if="atendimentoInfo">
-                        <table class="table border">
+                        <table class="table">
                             <tbody>
                                 <tr>
                                     <th>
@@ -663,9 +665,45 @@
                                         {% endverbatim %}
                                     </td>
                                 </tr>
+                                <tr>
+                                    <th colspan="2">
+                                        {{ 'label.customer'|trans }}
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        {{ 'label.customer.name'|trans }}
+                                    </th>
+                                    <td>
+                                        {% verbatim %}
+                                            {{ atendimentoInfo.cliente?.nome }}
+                                        {% endverbatim %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        {{ 'label.customer.id'|trans }}
+                                    </th>
+                                    <td>
+                                        {% verbatim %}
+                                            {{ atendimentoInfo.cliente?.documento }}
+                                        {% endverbatim %}
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
+                    {% if settings.callTicketOutOfOrder %}
+                        <div class="modal-footer">
+                            <button class="btn btn-outline-primary"
+                                title="{{ 'button.call'|trans }}"
+                                v-bind:disabled="busy || !atendimentoInfo"
+                                v-on:click="chamarAtendimento(atendimentoInfo)">
+                                <i class="fa fa-bullhorn"></i>
+                                {{ 'button.call'|trans }}
+                            </button>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
