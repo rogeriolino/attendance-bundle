@@ -20,16 +20,19 @@ use Novosga\AttendanceBundle\Dto\RedirecionarAtendimentoDto;
 use Novosga\AttendanceBundle\Dto\SetLocalDto;
 use Novosga\AttendanceBundle\NovosgaAttendanceBundle;
 use Novosga\Entity\ServicoUsuarioInterface;
+use Novosga\Entity\UnidadeInterface;
 use Novosga\Entity\UsuarioInterface;
 use Novosga\Event\PreUserSetLocalEvent;
 use Novosga\Event\UserSetLocalEvent;
 use Novosga\Form\ClienteType;
 use Novosga\Http\Envelope;
+use Novosga\Repository\AtendimentoRepositoryInterface;
 use Novosga\Repository\ClienteRepositoryInterface;
 use Novosga\Repository\LocalRepositoryInterface;
 use Novosga\Repository\ServicoRepositoryInterface;
 use Novosga\Repository\ServicoUnidadeRepositoryInterface;
 use Novosga\Repository\UsuarioRepositoryInterface;
+use Novosga\Service\ApplicationSettingsServiceInterface;
 use Novosga\Service\AtendimentoServiceInterface;
 use Novosga\Service\ClienteServiceInterface;
 use Novosga\Service\FilaServiceInterface;
@@ -51,6 +54,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 #[Route("/", name: "novosga_attendance_")]
 class DefaultController extends AbstractController
 {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+        private readonly ApplicationSettingsServiceInterface $settingsService,
+    ) {
+    }
+
     #[Route("/", name: "index", methods: ["GET"])]
     public function index(
         ServicoRepositoryInterface $servicoRepository,
@@ -58,7 +67,6 @@ class DefaultController extends AbstractController
         AtendimentoServiceInterface $atendimentoService,
         UsuarioServiceInterface $usuarioService,
         ServicoServiceInterface $servicoService,
-        TranslatorInterface $translator
     ): Response {
         /** @var UsuarioInterface */
         $usuario = $this->getUser();
@@ -81,10 +89,10 @@ class DefaultController extends AbstractController
 
         $domain = NovosgaAttendanceBundle::getDomain();
         $tiposAtendimento = [
-            FilaServiceInterface::TIPO_TODOS       => $translator->trans('label.all', [], $domain),
-            FilaServiceInterface::TIPO_NORMAL      => $translator->trans('label.no_priority', [], $domain),
-            FilaServiceInterface::TIPO_PRIORIDADE  => $translator->trans('label.priority', [], $domain),
-            FilaServiceInterface::TIPO_AGENDAMENTO => $translator->trans('label.schedule', [], $domain),
+            FilaServiceInterface::TIPO_TODOS       => $this->translator->trans('label.all', [], $domain),
+            FilaServiceInterface::TIPO_NORMAL      => $this->translator->trans('label.no_priority', [], $domain),
+            FilaServiceInterface::TIPO_PRIORIDADE  => $this->translator->trans('label.priority', [], $domain),
+            FilaServiceInterface::TIPO_AGENDAMENTO => $this->translator->trans('label.schedule', [], $domain),
         ];
 
         $atendimentoAtual = $atendimentoService->getAtendimentoAndamento($usuario, $unidade);
@@ -100,6 +108,7 @@ class DefaultController extends AbstractController
         }, $servicosUsuario);
 
         $servicosIndisponiveis = $servicoService->servicosIndisponiveis($unidade, $usuario);
+        $settings = $this->settingsService->loadBehaviorSettings();
 
         return $this->render('@NovosgaAttendance/default/index.html.twig', [
             'time' => time() * 1000,
@@ -113,6 +122,7 @@ class DefaultController extends AbstractController
             'local' => $local,
             'numeroLocal' => $numeroLocal,
             'tipoAtendimento' => $tipo,
+            'settings' => $settings,
         ]);
     }
 
@@ -193,7 +203,6 @@ class DefaultController extends AbstractController
         LocalRepositoryInterface $localRepository,
         UsuarioServiceInterface $usuarioService,
         EventDispatcherInterface $dispatcher,
-        TranslatorInterface $translator,
         #[MapRequestPayload()] SetLocalDto $data,
     ): Response {
         $envelope = new Envelope();
@@ -202,7 +211,7 @@ class DefaultController extends AbstractController
             $tipo = ($data->tipoAtendimento ?? FilaServiceInterface::TIPO_TODOS);
             if ($data->numeroLocal <= 0) {
                 throw new Exception(
-                    $translator->trans(
+                    $this->translator->trans(
                         'error.place_number',
                         [],
                         NovosgaAttendanceBundle::getDomain(),
@@ -219,7 +228,7 @@ class DefaultController extends AbstractController
 
             if (!in_array($tipo, $tipos)) {
                 throw new Exception(
-                    $translator->trans(
+                    $this->translator->trans(
                         'error.queue_type',
                         [],
                         NovosgaAttendanceBundle::getDomain(),
@@ -230,7 +239,7 @@ class DefaultController extends AbstractController
             $local = $localRepository->find($data->local);
             if (!$local) {
                 throw new Exception(
-                    $translator->trans('error.place', [], NovosgaAttendanceBundle::getDomain())
+                    $this->translator->trans('error.place', [], NovosgaAttendanceBundle::getDomain())
                 );
             }
 
@@ -316,7 +325,6 @@ class DefaultController extends AbstractController
         LocalRepositoryInterface $localRepository,
         AtendimentoServiceInterface $atendimentoService,
         UsuarioServiceInterface $usuarioService,
-        TranslatorInterface $translator
     ): Response {
         $envelope = new Envelope();
         /** @var UsuarioInterface */
@@ -347,7 +355,7 @@ class DefaultController extends AbstractController
 
         if (!$atendimento) {
             throw new Exception(
-                $translator->trans('error.queue.empty', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.queue.empty', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
@@ -368,12 +376,11 @@ class DefaultController extends AbstractController
         ServicoRepositoryInterface $servicoRepository,
         AtendimentoServiceInterface $atendimentoService,
         UsuarioServiceInterface $usuarioService,
-        TranslatorInterface $translator,
         int $id,
     ): Response {
-        $servico = $servicoRepository->find($id);
-        if (!$servico) {
-            throw $this->createNotFoundException();
+        $settings = $this->settingsService->loadBehaviorSettings();
+        if (!$settings->callTicketByService) {
+            throw new Exception('Chamar senha por serviço não é permitido');
         }
 
         $envelope = new Envelope();
@@ -382,12 +389,11 @@ class DefaultController extends AbstractController
         $unidade = $usuario->getLotacao()->getUnidade();
 
         // verifica se ja esta atendendo alguem
-        $atendimento = $atendimentoService->getAtendimentoAndamento($usuario->getId(), $unidade);
+        $this->checkAtendimentoEmAndamento($atendimentoService, $usuario, $unidade);
 
-        if ($atendimento) {
-            throw new Exception(
-                $translator->trans('error.attendance.in_process', [], NovosgaAttendanceBundle::getDomain())
-            );
+        $servico = $servicoRepository->find($id);
+        if (!$servico) {
+            throw $this->createNotFoundException();
         }
 
         $localId = $this->getLocalAtendimento($usuarioService, $usuario);
@@ -413,7 +419,61 @@ class DefaultController extends AbstractController
 
         if (!$atendimento) {
             throw new Exception(
-                $translator->trans('error.queue.empty', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.queue.empty', [], NovosgaAttendanceBundle::getDomain())
+            );
+        }
+
+        $atendimentoService->chamarSenha($atendimento, $usuario);
+
+        $data = $atendimento->jsonSerialize();
+        $envelope->setData($data);
+
+        return $this->json($envelope);
+    }
+
+    /**
+     * Chama ou rechama um atendimento mesmo que fora de ordem
+     */
+    #[Route("/chamar/atendimento/{id}", name: "chamar_atendimento", methods: ["POST"])]
+    public function chamarAtendimento(
+        LocalRepositoryInterface $localRepository,
+        AtendimentoRepositoryInterface $atendimentoRepository,
+        AtendimentoServiceInterface $atendimentoService,
+        UsuarioServiceInterface $usuarioService,
+        int $id,
+    ): Response {
+        $settings = $this->settingsService->loadBehaviorSettings();
+        if (!$settings->callTicketOutOfOrder) {
+            throw new Exception('Chamar senha fora de ordem serviço não é permitido');
+        }
+
+        $envelope = new Envelope();
+        /** @var UsuarioInterface */
+        $usuario = $this->getUser();
+        $unidade = $usuario->getLotacao()->getUnidade();
+
+        // verifica se ja esta atendendo alguem
+        $this->checkAtendimentoEmAndamento($atendimentoService, $usuario, $unidade);
+
+        $atendimento = $atendimentoRepository->find($id);
+        if (!$atendimento) {
+            throw $this->createNotFoundException();
+        }
+
+        $localId = $this->getLocalAtendimento($usuarioService, $usuario);
+        $numeroLocal = $this->getNumeroLocalAtendimento($usuarioService, $usuario);
+        $local = $localRepository->find($localId);
+
+        $sucesso = $atendimentoService->chamarAtendimento(
+            $atendimento,
+            $usuario,
+            $local,
+            $numeroLocal,
+        );
+
+        if (!$sucesso) {
+            throw new Exception(
+                $this->translator->trans('error.queue.empty', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
@@ -429,10 +489,8 @@ class DefaultController extends AbstractController
      * Inicia o atendimento com o proximo da fila.
      */
     #[Route("/iniciar", name: "iniciar", methods: ["POST"])]
-    public function iniciar(
-        AtendimentoServiceInterface $atendimentoService,
-        TranslatorInterface $translator
-    ): Response {
+    public function iniciar(AtendimentoServiceInterface $atendimentoService): Response
+    {
         /** @var UsuarioInterface */
         $usuario = $this->getUser();
         $unidade = $usuario->getLotacao()->getUnidade();
@@ -440,7 +498,7 @@ class DefaultController extends AbstractController
 
         if (!$atual) {
             throw new Exception(
-                $translator->trans('error.attendance.empty', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.attendance.empty', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
@@ -457,10 +515,8 @@ class DefaultController extends AbstractController
      * Marca o atendimento como nao compareceu.
      */
     #[Route("/nao_compareceu", name: "naocompareceu", methods: ["POST"])]
-    public function naoCompareceu(
-        AtendimentoServiceInterface $atendimentoService,
-        TranslatorInterface $translator
-    ): Response {
+    public function naoCompareceu(AtendimentoServiceInterface $atendimentoService): Response
+    {
         /** @var UsuarioInterface */
         $usuario = $this->getUser();
         $unidade = $usuario->getLotacao()->getUnidade();
@@ -468,7 +524,7 @@ class DefaultController extends AbstractController
 
         if (!$atual) {
             throw new Exception(
-                $translator->trans('error.attendance.empty', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.attendance.empty', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
@@ -489,7 +545,6 @@ class DefaultController extends AbstractController
         UsuarioRepositoryInterface $usuarioRepository,
         ServicoRepositoryInterface $servicoRepository,
         AtendimentoServiceInterface $atendimentoService,
-        TranslatorInterface $translator,
         #[MapRequestPayload] EncerrarAtendimentoDto $data,
     ): Response {
         $envelope = new Envelope();
@@ -501,13 +556,13 @@ class DefaultController extends AbstractController
 
         if (!$atual) {
             throw new Exception(
-                $translator->trans('error.attendance.not_in_process', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.attendance.not_in_process', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
         if (empty($data->servicos)) {
             throw new Exception(
-                $translator->trans('error.attendance.no_service', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.attendance.no_service', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
@@ -545,7 +600,6 @@ class DefaultController extends AbstractController
     #[Route("/redirecionar", name: "redirecionar", methods: ["POST"])]
     public function redirecionar(
         AtendimentoServiceInterface $atendimentoService,
-        TranslatorInterface $translator,
         #[MapRequestPayload] RedirecionarAtendimentoDto $data,
     ): Response {
         $envelope = new Envelope();
@@ -557,14 +611,14 @@ class DefaultController extends AbstractController
 
         if (!$atual) {
             throw new Exception(
-                $translator->trans('error.attendance.not_in_process', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.attendance.not_in_process', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
         $redirecionado = $atendimentoService->redirecionar($atual, $usuario, $data->servico, $data->usuario);
         if (!$redirecionado->getId()) {
             throw new Exception(
-                $translator->trans(
+                $this->translator->trans(
                     'error.attendance.redirect',
                     [
                         '%atendimento%' => $atual->getId(),
@@ -581,7 +635,6 @@ class DefaultController extends AbstractController
     #[Route("/info_senha/{id}", name: "infosenha", methods: ["GET"])]
     public function infoSenha(
         AtendimentoServiceInterface $atendimentoService,
-        TranslatorInterface $translator,
         int $id,
     ): Response {
         $envelope = new Envelope();
@@ -592,7 +645,7 @@ class DefaultController extends AbstractController
 
         if (!$atendimento) {
             throw new Exception(
-                $translator->trans('error.attendance.invalid', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.attendance.invalid', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
@@ -623,7 +676,6 @@ class DefaultController extends AbstractController
     public function usuarios(
         UsuarioRepositoryInterface $usuarioRepository,
         ServicoUnidadeRepositoryInterface $servicoUnidadeRepository,
-        TranslatorInterface $translator,
         int $servicoId
     ): Response {
         $envelope = new Envelope();
@@ -634,7 +686,7 @@ class DefaultController extends AbstractController
 
         if (!$servicoUnidade) {
             throw new Exception(
-                $translator->trans('error.service.invalid', [], NovosgaAttendanceBundle::getDomain())
+                $this->translator->trans('error.service.invalid', [], NovosgaAttendanceBundle::getDomain())
             );
         }
 
@@ -667,5 +719,19 @@ class DefaultController extends AbstractController
         $tipoAtendimento = $tipoAtendimentoMeta ? $tipoAtendimentoMeta->getValue() : FilaServiceInterface::TIPO_TODOS;
 
         return $tipoAtendimento;
+    }
+
+    private function checkAtendimentoEmAndamento(
+        AtendimentoServiceInterface $atendimentoService,
+        UsuarioInterface $usuario,
+        UnidadeInterface $unidade,
+    ): void {
+        // verifica se ja esta atendendo alguem
+        $atendimento = $atendimentoService->getAtendimentoAndamento($usuario, $unidade);
+        if ($atendimento) {
+            throw new Exception(
+                $this->translator->trans('error.attendance.in_process', [], NovosgaAttendanceBundle::getDomain())
+            );
+        }
     }
 }

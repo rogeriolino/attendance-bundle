@@ -135,6 +135,20 @@
                 });
             },
             
+            chamarAtendimento(atendimento) {
+                this.busy = true;
+                App.ajax({
+                    url: App.url(`/novosga.attendance/chamar/atendimento/${atendimento.id}`),
+                    type: 'post',
+                    success: (response) => {
+                        this.atendimento = response.data;
+                    },
+                    complete: () => {
+                        setTimeout(() => this.busy = false, 3 * 1000);
+                    }
+                });
+            },
+            
             iniciar() {
                 App.ajax({
                     url: App.url('/novosga.attendance/iniciar'),
