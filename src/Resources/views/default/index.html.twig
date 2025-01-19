@@ -697,7 +697,7 @@
                         <div class="modal-footer">
                             <button class="btn btn-outline-primary"
                                 title="{{ 'button.call'|trans }}"
-                                v-bind:disabled="busy || !atendimentoInfo"
+                                v-bind:disabled="busy || !atendimentoInfo || atendimento"
                                 v-on:click="chamarAtendimento(atendimentoInfo)">
                                 <i class="fa fa-bullhorn"></i>
                                 {{ 'button.call'|trans }}
